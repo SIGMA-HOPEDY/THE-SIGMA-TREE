@@ -51,7 +51,7 @@ if (player.e.unlocked && tmp.e && tmp.e.effect) {
     ],
     microtabs: {
         stuff: {
-            "Upgrades": {
+            "升级": {
                 unlocked() {return true}, 
                 content: [
                     ["blank", "15px"],
@@ -106,14 +106,21 @@ rows: 5, cols: 5,
             let raw = player[this.layer].points.pow(0.005);    
             if (hasUpgrade('I', 12)) raw = raw.times(1.3)
             if (hasUpgrade('I', 22)) raw = raw.times(upgradeEffect('I', 22)) 
+                if (hasUpgrade('I', 34)) raw = raw.times(upgradeEffect('I', 34)) 
+                    if (hasUpgrade('e', 24)) raw = raw.times(upgradeEffect('e', 24))
             if (hasUpgrade('I', 22)) raw = raw.pow(1.5) 
             if (hasUpgrade('e', 22)) raw = raw.pow(1.5)          
-            let cap = new EN("2");        
-            if (hasUpgrade('p', 25)) cap = cap.times(1.1)
-                 if (hasUpgrade('I', 15)) cap = cap.times(1.3)
-                     if (hasUpgrade('e', 22)) cap = cap.pow(1.5) 
-                        if (hasUpgrade('I', 22)) cap = cap.pow(1.25)
-            return effectWithSoftcap(raw, cap, new EN(0.01).div(player[this.layer].points.nlg().nlg().add(1)));
+            let cap0 = new EN("2");        
+            if (hasUpgrade('p', 25)) cap0 = cap0.times(1.1)
+                 if (hasUpgrade('I', 15)) cap0 = cap0.times(1.3)
+                     if (hasUpgrade('e', 22)) cap0 = cap0.pow(1.5) 
+                        if (hasUpgrade('I', 22)) cap0 = cap0.pow(1.25)
+                            raw = effectWithSoftcap(raw, cap0, new EN(0.01).div(player[this.layer].points.nlg().nlg().add(1)))
+                        let cap1 = new EN("25");
+                         raw = effectWithSoftcap(raw, cap1, new EN(0.001).div(player[this.layer].points.nlg().nlg().add(1)))
+                         let cap2 = new EN("1e9");
+                         if (raw.gte(cap2)) raw = raw.div(cap2).log10().add(1).times(cap2);
+            return raw;
         },  
         effectDisplay() { return format(upgradeEffect(this.layer, this.id),6,true) + "x" }
     },
@@ -168,10 +175,12 @@ addLayer("I", {
     symbol: "I",
     position: 0,
     startData() { return {
-        unlocked: false,
-        points: new EN(0),
-        auto: false,
-    }},
+    unlocked: false,
+    points: new EN(0),
+    auto: false,
+    increment: new EN(0),
+    best: new EN(0), 
+}},
     color: "#3b18ff",
     requires: new EN(1e5),
     resource: "增量器",
@@ -185,6 +194,31 @@ addLayer("I", {
         let mult = new EN(1)
         return mult
     },
+    update(diff) {
+    let p = player.I.points;
+    if (!p.gte(175)) {
+        tmp.I.incrementGain = new EN(0);
+        return;
+    }
+    let e13 = tmp.I?.buyables?.[13]?.effect ?? new EN(1);
+    let e11 = tmp.I?.buyables?.[11]?.effect ?? new EN(1);
+    let e12 = tmp.I?.buyables?.[12]?.effect ?? new EN(1);
+
+    let exponent = new EN(0.5).times(e13);
+    let base=p.div(175).sub(1).nlog(2)
+    if (hasUpgrade("I", 25))base=base.times(1.05)
+    let gain =base.pow(exponent);
+    gain = gain.times(e11).times(e12);
+    if (hasUpgrade("I", 31))gain=gain.times(upgradeEffect('I',31))
+        if (hasUpgrade("I", 33))gain=gain.times(upgradeEffect('I',33))
+        if (hasUpgrade("e", 23))gain=gain.times(upgradeEffect('e',23))
+            if (hasAchievement("a", 24)) gain = gain.times(tmp.a.effect);
+        if (hasUpgrade("I", 31))gain=gain.pow(1.25)
+    let cap0 = new EN('1.79e308');
+        gain = effectWithSoftcap(gain, cap0, new EN(0.1).div(gain.nlg().nlg().add(1)));
+    player.I.increment = player.I.increment.add(gain.times(diff));
+    tmp.I.incrementGain = gain;
+},
 directMult() {
     let mult = new EN(1)
     if (hasUpgrade('p', 21)) mult = mult.times(upgradeEffect('p', 21))
@@ -204,6 +238,7 @@ directMult() {
     let base=p.div(logP).add(1);
     if(hasUpgrade("I", 14)) base=base.times(2);
     if(hasUpgrade("e", 12)) base=base.times(upgradeEffect('e', 12));
+    base = base.times(player.I.increment.nlg().pow(2));
     let exp=logP.times(1.01);
     let raw=base.pow(exp);
     if(hasUpgrade("I", 12)) raw=raw.pow(1.5);
@@ -219,6 +254,7 @@ directMult() {
     doReset(resettingLayer) {
         let keep = [];
         if (layers[resettingLayer].row > this.row) layerDataReset("I", keep);
+         if (hasAchievement("a", 22)) keepMilestones("I", [1])
     },
     autoPrestige() { return hasMilestone("I", 3) },
     tabFormat: [
@@ -243,6 +279,29 @@ directMult() {
                     "milestones"
                 ]
             },
+             "增量": {
+    unlocked() { return hasUpgrade("I", 24); },
+    content: [
+        ["blank", "15px"],
+        ["display-text", function() {
+            let amt = player.I.increment || new EN(0);
+            let gain = tmp.I?.incrementGain || new EN(0);
+            let c = tmp.I.color;
+            return `你有 ${coloredText(format(amt, 4, true), c)} 增量 ` +
+                   `(${coloredText("+" + format(gain, 4, true), c)}/s)`;
+        }],
+        ["blank", "15px"],
+        ["display-text", function() {
+            let mult = player.I.increment.nlg().pow(2);
+            let c = tmp.I.color;
+            return `使增量器效果基础 ${coloredText("*" + format(mult, 4, true), c)}`;
+        }],
+        ["blank", "15px"],
+        "buyables",
+        ["blank", "15px"],
+        ["raw-html", () => `<h4 style="opacity:.5">增量器达到 <b>175</b> 后开始自动获取增量。</h4>`],
+    ],
+},
         },
     },
     milestones: {
@@ -277,9 +336,10 @@ rows: 9, cols: 5,
     },    
     effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
     },
-    22: { title: "增量^3", description: "反重生效果^1.5,反重生效果软上限延迟^1.5,增量器提升反重生效果", cost: new EN(105), unlocked() { return hasUpgrade('I', 21) } ,
+    22: { title: "增量^3", description: "反重生效果^1.5,反重生效果软上限延迟^1.25,增量器提升反重生效果", cost: new EN(105), unlocked() { return hasUpgrade('I', 21) } ,
         effect() {     
-        let raw = player.I.points.add(1).pow(0.521);               
+        let raw = player.I.points.add(1).pow(0.521);    
+        if(hasUpgrade('I',34))raw=raw.pow(3)           
         let cap = new EN("1e9");        
         return effectWithSoftcap(raw, cap, new EN(0.125).div(player.I.points.nlg().nlg().add(1)));
     },    
@@ -287,6 +347,186 @@ rows: 9, cols: 5,
     },
     23: { title: "增量^1.79e308", description: "重生点获取^1.01", cost: new EN(169), unlocked() { return hasUpgrade('I', 22) } ,
            },
+           24: { title: "增量重置", description: "解锁一个增量器子界面", cost: new EN(175), unlocked() { return hasUpgrade('I', 23) } ,
+           },
+            25: { title: "增量加成", description: "增量器降低增量购买项价格,并将增量获取基础*1.05,增量速度效果基础+0.05,增量强度效果基础+0.5", cost: new EN(205), unlocked() { return hasUpgrade('I', 24) } ,
+            effect() {     
+        let raw = player.I.points.add(1).pow(player.I.points.nlg().pow(0.5));      
+        if(hasUpgrade('I',35))raw=raw.pow(3)          
+        let cap = new EN("1.79e308");        
+        return effectWithSoftcap(raw, cap, new EN(0.25).div(player.I.points.nlg().nlg().add(1)));
+    },    
+    effectDisplay() { return "/"+format(upgradeEffect(this.layer, this.id),4,true)  }
+           },
+           31: { title: "增量变胀", description: "增量器加成增量获取,并将增量获取^1.25", cost: new EN(217), unlocked() { return hasUpgrade('I', 25) } ,
+            effect() {     
+        let raw = player.I.points.add(1).pow(player.I.points.nlg().pow(0.91));  
+        if(hasUpgrade('I',35))raw=raw.pow(3)              
+        let cap = new EN("1.79e308");        
+        return effectWithSoftcap(raw, cap, new EN(0.78).div(player.I.points.nlg().nlg().add(1)));
+    },    
+    effectDisplay() { return "*"+format(upgradeEffect(this.layer, this.id),4,true)  }
+           },
+           32: { title: "增胀", description: "增量加成能量获取,并将能量获取^1.25", cost: new EN(228), unlocked() { return hasUpgrade('I', 31) } ,
+            effect() {     
+        let raw = player.I.increment.pow(0.125);               
+        let cap = new EN("1.79e308");        
+        return effectWithSoftcap(raw, cap, new EN(0.25).div(player.I.increment.nlg().nlg().add(1)));
+    },    
+    effectDisplay() { return "*"+format(upgradeEffect(this.layer, this.id),4,true)  }
+           },
+           33: { title: "胀?", description: "增量加成增量获取", cost: new EN(244), unlocked() { return hasUpgrade('I', 32) } ,
+            effect() {     
+        let raw = player.I.increment.pow(0.15);               
+        let cap = new EN("1.79e308");        
+        return effectWithSoftcap(raw, cap, new EN(0.3).div(player.I.increment.nlg().nlg().add(1)));
+    },    
+    effectDisplay() { return "*"+format(upgradeEffect(this.layer, this.id),4,true)  }
+           },
+            34: { title: "胀!", description: "增量提升反重生效果,并将增量^3效果^3", cost: new EN(250), unlocked() { return hasUpgrade('I', 33) } ,
+            effect() {     
+        let raw = player.I.increment.nlg().pow(3);               
+        let cap = new EN("1e9");        
+        return effectWithSoftcap(raw, cap, new EN(0.03).div(player.I.increment.nlg().nlg().nlg().add(1)));
+    },    
+    effectDisplay() { return "*"+format(upgradeEffect(this.layer, this.id),6,true)  }
+           },
+           35: { title: "胀!!!", description: "增量提升能量效果,并将增量加成,增量变胀效果^3,解锁新的能量升级", cost: new EN(283), unlocked() { return hasUpgrade('I', 34) } ,
+            effect() {     
+        let raw = player.I.increment.nlg().pow(3.5);               
+        let cap = new EN("1e9");        
+        return effectWithSoftcap(raw, cap, new EN(0.035).div(player.I.increment.nlg().nlg().nlg().add(1)));
+    },    
+    effectDisplay() { return "*"+format(upgradeEffect(this.layer, this.id),6,true)  }
+           },
+},
+buyables: {
+    rows: 1, cols: 3,
+
+    11: {
+        title: "增量速度",
+        cost(x) {let costbase = new EN(10).pow(x.nlg()).times(new EN(1.01).pow(x.pow(2))).times(new EN(0.99).pow(x));        
+let costexp = new EN(1);
+let cost = EN.pow(costbase, costexp); 
+ if (hasUpgrade("I", 25)) cost = cost.div(upgradeEffect("I", 25));                       
+return cost;
+        },
+        effect(x) {
+            let base=new EN(1.25)
+            if (hasUpgrade("I", 25))base=base.add(0.05)
+            let exp=x
+            let raw=base.pow(exp)
+            return raw;
+        },
+        display() {
+            let c = tmp.I.color;
+            let bought = getBuyableAmount("I", 11);
+            let cost = this.cost(bought);      
+    let eff = this.effect(bought);
+            return `价格: ${format(cost, 3, true)} 增量<br>` +
+                   `数量: ${formatWhole(bought)}<br>` +
+                   `效果:增量获取 ${"*" + format(eff, 4, true)}(后于增量耐性生效)`;
+        },
+        canAfford() {
+            return player.I.increment.gte(tmp.I.buyables[11].cost);
+        },
+        buy() {
+            player.I.increment = player.I.increment.sub(tmp.I.buyables[11].cost);
+            player.I.buyables[11] = getBuyableAmount("I", 11).add(1);
+        },
+        buyMax() {
+            while (player.I.increment.gte(this.cost(player.I.buyables[11]))) {
+                player.I.increment = player.I.increment.sub(this.cost(player.I.buyables[11]));
+                player.I.buyables[11] = player.I.buyables[11].add(1);
+            }
+        },
+        unlocked() { return hasUpgrade("I", 24); },
+    },
+
+    12: {
+        title: "增量强度",
+        cost(x) {let costbase = new EN(10000).pow(x.nlg()).times(new EN(1.25).pow(x.pow(2))).times(new EN(0.91).pow(x));        
+let costexp = new EN(1);
+let cost = EN.pow(costbase, costexp); 
+ if (hasUpgrade("I", 25)) cost = cost.div(upgradeEffect("I", 25));                       
+return cost;
+        },
+        effect(x) {let base=new EN(2)
+            if (hasUpgrade("I", 25))base=base.add(0.5)
+            let exp=x
+            let raw=base.pow(exp)
+            return raw;
+        },
+        display() {
+            let c = tmp.I.color;
+            let bought = getBuyableAmount("I", 12);
+           let cost = this.cost(bought);      
+    let eff = this.effect(bought);
+            return `价格: ${format(cost, 3, true)} 增量<br>` +
+                   `数量: ${formatWhole(bought)}<br>` +
+                   `效果:增量获取 ${"*" + format(eff, 4, true)}(后于增量耐性生效)`;
+        },
+        canAfford() {
+            return player.I.increment.gte(tmp.I.buyables[12].cost);
+        },
+        buy() {
+            player.I.increment = player.I.increment.sub(tmp.I.buyables[12].cost);
+            player.I.buyables[12] = getBuyableAmount("I", 12).add(1);
+        },
+        buyMax() {
+            while (player.I.increment.gte(this.cost(player.I.buyables[12]))) {
+                player.I.increment = player.I.increment.sub(this.cost(player.I.buyables[12]));
+                player.I.buyables[12] = player.I.buyables[12].add(1);
+            }
+        },
+        unlocked() { return hasUpgrade("I", 24) && getBuyableAmount("I", 11).gte(5); },
+    },
+
+    13: {
+        title: "增量耐性",
+        cost(x) {       
+let costbase = new EN(100000).times(new EN(1.5).pow(x.pow(2))).times(new EN(0.78).pow(x));        
+let costexp = new EN(1);
+let cost = EN.pow(costbase, costexp); 
+ if (hasUpgrade("I", 25)) cost = cost.div(upgradeEffect("I", 25));                       
+return cost;
+        },
+       effect(x) {
+        let base = new EN(1.5);
+    let raw = base.pow(x);
+    let cap0 = new EN(100);
+    if (raw.gte(cap0)) raw = raw.div(cap0).pow(0.13).times(cap0);
+    let cap1 = new EN(22222);
+    if (raw.gte(cap1)) raw = raw.div(cap1).log10().add(1).times(cap1);
+    let cap2 = new EN(1919810);
+    if (raw.gte(cap2)) raw = raw.div(cap2).log10().add(1).times(cap2);
+    return raw;
+},
+       display() {
+    let c = tmp.I.color;
+    let bought = getBuyableAmount("I", 13);
+    let cost = this.cost(bought);
+    let eff = this.effect(bought);
+    return `价格: ${format(cost, 3, true)} 增量<br>` +
+           `数量: ${formatWhole(bought)}<br>` +
+           `效果:增量获取 ^${format(eff, 4, true)}`;
+},
+canAfford() {
+    return player.I.increment.gte(this.cost(getBuyableAmount("I", 13)));
+},
+buy() {
+    let cost = this.cost(getBuyableAmount("I", 13));
+    player.I.increment = player.I.increment.sub(cost);
+    player.I.buyables[13] = getBuyableAmount("I", 13).add(1);
+},
+        buyMax() {
+            while (player.I.increment.gte(this.cost(player.I.buyables[13]))) {
+                player.I.increment = player.I.increment.sub(this.cost(player.I.buyables[13]));
+                player.I.buyables[13] = player.I.buyables[13].add(1);
+            }
+        },
+        unlocked() { return hasUpgrade("I", 24) && getBuyableAmount("I", 12).gte(3); },
+    },
 },
 })
 addLayer("e", {
@@ -311,14 +551,17 @@ addLayer("e", {
         if (hasUpgrade('e', 11)) mult = mult.times(upgradeEffect('e', 11))
             if (hasUpgrade('e', 13)) mult = mult.times(upgradeEffect('e', 13))
                 if (hasUpgrade('I', 21)) mult = mult.times(upgradeEffect('I', 21))
+                    if (hasUpgrade('I', 32)) mult = mult.times(upgradeEffect('I', 32))
                if (hasAchievement('a', 22)) mult = mult.times(tmp.a.effect)      
         return mult
     },
     gainExp() {
         let exp = new EN(1)
+        if (hasUpgrade('I', 32)) exp = exp.times(1.25)
         return exp
     },
     passiveGeneration() {
+    if (hasAchievement('a',22)) return 1;  // 100% = 1倍
     return 0;
 },
 layerShown() { return hasUpgrade("I", 15) || player.e.unlocked },
@@ -331,6 +574,7 @@ layerShown() { return hasUpgrade("I", 15) || player.e.unlocked },
     let exp=logP.nlg().times(1.025).min(5);
     let raw=base.pow(exp);
     if(hasUpgrade("e", 14)) raw=raw.times(upgradeEffect("e", 14));
+    if(hasUpgrade('I',35))raw=raw.times(upgradeEffect("I", 35)) 
     if(hasUpgrade("I", 21)) raw=raw.pow(1.3);
     return raw;
 },
@@ -419,8 +663,35 @@ rows: 9, cols: 5,
     21: { title: "动能定理", description: "增量器效果^2", cost: new EN(1e10),
     unlocked() { return hasUpgrade('e', 15) },    
     },
-    22: { title: "内能", description: "反重生效果^1.5,反重生效果软上限延迟^1.25,解锁一个新增量器升级", cost: new EN(9e15),
+    22: { title: "内能", description: "反重生效果^1.5,反重生效果软上限延迟^1.5,解锁新的增量器升级", cost: new EN(9e15),
     unlocked() { return hasUpgrade('e', 21) },    
+    },
+    23: { title: "机械能", description: "能量加成增量获取", cost: new EN(1e78),
+    unlocked() { return hasUpgrade('I', 35)&&hasUpgrade('e', 22) },    
+    effect() {        
+        let raw = player.e.points.add(1).pow(0.13);               
+        let cap = new EN("1.79e308");        
+        return effectWithSoftcap(raw, cap, new EN(0.125).div(player.e.points.nlg().nlg().add(1)));
+    },    
+    effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
+    },
+    24: { title: "电能", description: "能量提升反重生效果", cost: new EN(1e78),
+    unlocked() { return hasUpgrade('e', 23) },    
+    effect() {        
+        let raw = player.e.points.nlg().pow(2.88);               
+        let cap = new EN("1e9");        
+        return effectWithSoftcap(raw, cap, new EN(0.25).div(player.e.points.nlg().nlg().add(1)));
+    },    
+    effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
+    },
+    25: { title: "核能", description: "能量加成点数获取", cost: new EN(1e88),
+    unlocked() { return hasUpgrade('e', 24) },    
+    effect() {        
+        let raw = player.e.points.nlg().pow(3.33);               
+        let cap = new EN("1e9");        
+        return effectWithSoftcap(raw, cap, new EN(0.33).div(player.e.points.nlg().nlg().add(1)));
+    },    
+    effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
     },
 },
 })

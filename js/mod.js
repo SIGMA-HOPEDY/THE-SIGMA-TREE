@@ -45,6 +45,7 @@ function getPointGen() {
     if (hasUpgrade('p', 11)) gain = gain.times(2);
     if (hasUpgrade('p', 12)) gain = gain.times(upgradeEffect('p', 12));
     if (hasUpgrade('p', 14)) gain = gain.times(upgradeEffect('p', 14));
+    if (hasUpgrade('e', 25)) gain = gain.times(upgradeEffect('e', 25));
     if (player.I.unlocked) gain = gain.times(tmp.I.effect);
    if (player.a.unlocked) gain = gain.times(tmp.a.effect);
    if (hasUpgrade('p', 23)) gain = gain.pow(upgradeEffect('p', 23));
@@ -117,7 +118,7 @@ function getUndulatingColor(period = Math.sqrt(760)){
 var displayThings = [
 	function(){
 		let x = getUndulatingColor()
-		let a = "当前残局: "+colorText("h2", x,format("10^132"))/*"Taeyeon"*/+" Points."
+		let a = "当前残局: "+colorText("h2", x,format("3.131e310"))/*"Taeyeon"*/+" Points."
 		let d = isEndgame()?makeRed("<br>你超过了残局,<br>游戏可能在这里不平衡"):""
 		return a+d
 	},
@@ -125,7 +126,7 @@ var displayThings = [
 
 // Determines when the game "ends"
 function isEndgame() {
-return player.points.gte("10^132")}
+return player.points.gte("3.131e310")}
 
 
 // Less important things beyond this point!

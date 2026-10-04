@@ -96,6 +96,26 @@ addLayer("a", {
                 return player.a.points = player.a.points.add(25)
             },
         },
+        23: {
+            name: "增量变胀",
+            done() {
+                return hasUpgrade('I', 32)
+            },
+            tooltip: "购买升级 增胀<br>奖励:25 成就点,每秒获得 100% 能量,永久保留第一个增量器里程碑",
+            onComplete() {
+                return player.a.points = player.a.points.add(25)
+            },
+        },
+        24: {
+            name: "我去,软上限?!",
+            done() {
+                return player.BestPointsPerSec.gte('1.79e308')
+            },
+            tooltip: "达到第一重软上限<br>奖励:25 成就点,成就点效果对增量获取生效",
+            onComplete() {
+                return player.a.points = player.a.points.add(25)
+            },
+        },
     },
 effect() {
     let base=new EN(1.01)

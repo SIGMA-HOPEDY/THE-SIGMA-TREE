@@ -1549,7 +1549,11 @@
 OmegaNum.prototype.nlg = function() {
     return this.add(10).log10();
 };
-// 或者用 EN 别名，效果完全一样
-// EN.prototype.nlg = function() {
-//     return this.add(10).log10();
-// };
+// 扩展 OmegaNum 原型：带偏移的对数
+// x.nlog(m) = log_m(x + m)
+// 省略 m 时默认 m = 10，等价于 x.nlg()
+OmegaNum.prototype.nlog = function(m) {
+    if (m === undefined) m = 10;
+    let mm = new OmegaNum(m);
+    return this.add(mm).logBase(mm);
+};

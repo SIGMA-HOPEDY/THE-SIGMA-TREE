@@ -9,6 +9,13 @@ function keepUpgrades(layer, ids) {
         }
     }
 }
+function keepMilestones(layer, ids) {
+    for (let id of ids) {
+        if (!player[layer].milestones.includes(id.toString())) {
+            player[layer].milestones.push(id.toString());
+        }
+    }
+}
 // ========== 通用软上限函数 ==========
 function applySoftcap(gain, threshold, baseExponent, hintKey) {
     let exponentBase = new EN(baseExponent);
