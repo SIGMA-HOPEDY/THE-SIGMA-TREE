@@ -254,7 +254,7 @@ directMult() {
     doReset(resettingLayer) {
         let keep = [];
         if (layers[resettingLayer].row > this.row) layerDataReset("I", keep);
-         if (hasAchievement("a", 22)) keepMilestones("I", [1])
+         if (hasAchievement("a", 23)) keepMilestones("I", [1])
     },
     autoPrestige() { return hasMilestone("I", 3) },
     tabFormat: [
