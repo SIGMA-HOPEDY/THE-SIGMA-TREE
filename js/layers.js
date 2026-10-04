@@ -561,7 +561,7 @@ addLayer("e", {
         return exp
     },
     passiveGeneration() {
-    if (hasAchievement('a',22)) return 1;  // 100% = 1倍
+    if (hasAchievement('a',23)) return 1;  // 100% = 1倍
     return 0;
 },
 layerShown() { return hasUpgrade("I", 15) || player.e.unlocked },
