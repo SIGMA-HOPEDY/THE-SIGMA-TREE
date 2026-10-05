@@ -9,10 +9,11 @@ addLayer("p", {
     row: 0,
     startData() { return {
         unlocked: true,
-        points: new ExpantaNum(0),
+        points: new EN(0),
+        rexp: new EN(0), 
     }},
     color: "#3399FF",
-    requires: new ExpantaNum(10),
+    requires: new EN(10),
     resource: "重生点",
     baseResource: "points",
     baseAmount() {return player.points},
@@ -29,8 +30,25 @@ if (player.e.unlocked && tmp.e && tmp.e.effect) {
     mult = mult.times(tmp.e.effect);
 }
         if (hasAchievement('a', 15)) mult = mult.times(tmp.a.effect)
+             if (player.p.rexp && player.p.rexp.gt(0)) {
+        let rexpEff = player.p.rexp.add(1).pow(player.p.rexp.nlg().pow(0.5));
+        mult = mult.times(rexpEff);
+    }
         return mult
     },
+    update(diff) {
+    if (!player.p.points.gte("1.79e308")) {
+        if (!tmp.p) tmp.p = {};
+        tmp.p.rexpGain = new EN(0);
+        return;
+    }
+    let gain = player.p.points.add(1).log10()
+        .div(new EN("1.79e308").log10());
+         if (hasUpgrade("R", 11)) gain = gain.times(upgradeEffect("R", 11));
+    player.p.rexp = player.p.rexp.add(gain.times(diff));
+    if (!tmp.p) tmp.p = {};
+    tmp.p.rexpGain = gain;
+},
     gainExp() {
         let exp = new EN(1)
         if (hasUpgrade('p', 22)) exp = exp.times(upgradeEffect('p', 22))
@@ -59,6 +77,28 @@ if (player.e.unlocked && tmp.e && tmp.e.effect) {
                     ["upgrades", [1,2,3,4,5,6,7,8,9]]
                 ],
             },
+            "重生经验": {
+    unlocked() { return hasMilestone("R", 1); },
+    content: [
+        ["blank", "15px"],
+        ["display-text", function() {
+            let rexp = player.p.rexp || new EN(0);
+            let gain = tmp.p?.rexpGain || new EN(0);
+            let c = tmp.p.color;
+            return `你有 ${coloredText(format(rexp, 4, true), c)} 重生经验 ` +
+                   `(${coloredText("+" + format(gain, 4, true), c)}/s)`;
+        }],
+        ["blank", "15px"],
+        ["display-text", function() {
+            let rexp = player.p.rexp || new EN(1);
+            let eff = rexp.add(1).pow(rexp.nlg().pow(0.5));
+            let c = tmp.p.color;
+            return `使重生点获取 ${coloredText("*" + format(eff, 4, true), c)}`;
+        }],
+        ["blank", "15px"],
+        ["raw-html", () => `<h4 style="opacity:.5">重生点达到 <b>1.79e308</b> 后开始自动获取重生经验。</h4>`],
+    ],
+},
         },
     },
     upgrades: {        
@@ -101,7 +141,7 @@ rows: 5, cols: 5,
         effectDisplay() { return format(upgradeEffect(this.layer, this.id)) + "x" }
     },
     21: {title: "反重生",description: "重生点提升增量器获取",cost: new EN(1919810),    
-        unlocked() { return hasUpgrade('I', 11)&&hasUpgrade('p', 15) },    
+        unlocked() { return hasUpgrade('p', 21)||(hasUpgrade('I', 11)&&hasUpgrade('p', 15)) },    
         effect() {        
             let raw = player[this.layer].points.pow(0.005);    
             if (hasUpgrade('I', 12)) raw = raw.times(1.3)
@@ -125,7 +165,7 @@ rows: 5, cols: 5,
         effectDisplay() { return format(upgradeEffect(this.layer, this.id),6,true) + "x" }
     },
     22: {title: "反自增",description: "重生点提升重生点获取指数",cost: new EN(1e23),    
-        unlocked() { return hasUpgrade('I', 13)&&hasUpgrade('p', 21) },    
+        unlocked() { return hasUpgrade('p', 22)||(hasUpgrade('I', 13)&&hasUpgrade('p', 21) )},    
         effect() {        
             let raw = player[this.layer].points.nlg().nlg().pow(0.25);               
             let cap = new EN("2");        
@@ -143,7 +183,7 @@ rows: 5, cols: 5,
         effectDisplay() { return "^" + format(upgradeEffect(this.layer, this.id),6,true)  }
     },
     24: {title: "胀^2",description: "点数提升点数获取指数",cost: new EN(3e33),    
-        unlocked() { return hasUpgrade('I', 14)&&hasUpgrade('p', 23) },    
+        unlocked() { return hasUpgrade('p', 24)||(hasUpgrade('I', 14)&&hasUpgrade('p', 23) )},    
         effect() {        
             let raw = player.points.nlg().nlg().pow(0.1);               
             let cap = new EN("2");        
@@ -207,6 +247,9 @@ addLayer("I", {
     let exponent = new EN(0.5).times(e13);
     let base=p.div(175).sub(1).nlog(2)
     if (hasUpgrade("I", 25))base=base.times(1.05)
+        if (player.R.unlocked && tmp.R?.effect) {
+    base = base.times(tmp.R.effect.incrementBase);
+}
     let gain =base.pow(exponent);
     gain = gain.times(e11).times(e12);
     if (hasUpgrade("I", 31))gain=gain.times(upgradeEffect('I',31))
@@ -571,6 +614,9 @@ layerShown() { return hasUpgrade("I", 15) || player.e.unlocked },
     if(p.lte(0)) return new EN(1);
     let logP = p.nlg();
     let base=p.div(logP).add(2.5);
+    if (player.R.unlocked && tmp.R?.effect) {
+    base = base.times(tmp.R.effect.energyBase);
+}
     let exp=logP.nlg().times(1.025).min(5);
     let raw=base.pow(exp);
     if(hasUpgrade("e", 14)) raw=raw.times(upgradeEffect("e", 14));
@@ -694,6 +740,118 @@ rows: 9, cols: 5,
     effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
     },
 },
+})
+addLayer("R", {
+    name: "轮回点",
+    symbol: "R",
+    position: 0,
+    row: 2,
+    startData() { return {
+        unlocked: false,
+        points: new EN(0),
+        best: new EN(0),
+    }},
+    color: "#ff3333",
+    requires: new EN("1.79e310"),
+    resource: "轮回点",
+    baseResource: "points",
+    baseAmount() { return player.points },
+    type: "static",
+    branches: ["I", "e"],
+    exponent() { return new EN(3.33) },
+    layerShown() { return player.points.gte("1.79e310") || player.R.unlocked },
+    update(diff) {
+        player.R.best = player.R.best.max(player.R.points);
+    },
+    effect() {
+        let x = player.R.best;
+        let iBase = new EN(1.01);
+        let eBase = x.nlg();
+        if(hasMilestone('R',2))iBase=iBase.add(0.01)
+            if(hasMilestone('R',2))eBase=eBase.add(0.01)
+        let incBase = iBase.pow(x).min(1.79308);
+        let engBase = eBase.pow(x.nlg().pow(0.5));
+        return { incrementBase: incBase, energyBase: engBase };
+    },
+   effectDescription() {
+    let c = tmp.R.color;
+    let eff = tmp.R.effect;
+    return `使增量获取基础 ${coloredText("*" + format(eff.incrementBase, 4, true), c)} ` +
+           `能量效果基础 ${coloredText("*" + format(eff.energyBase, 4, true), c)}(基于最高)`;
+},
+
+    doReset(resettingLayer) {
+        let keep = [];
+        if (layers[resettingLayer].row > this.row) layerDataReset("R", keep);
+    },
+    autoPrestige() { return false },
+
+   tabFormat: [
+    "main-display",
+    "prestige-button",
+     ["display-text", function() {
+        let c = tmp.R.color;
+        let best = player.R.best || new EN(0);
+        return `当前最高轮回点:${coloredText(format(best, 4, true), c)}`;
+    }],
+    ["microtabs", "stuff"],
+    ["blank", "25px"],
+],
+    microtabs: {
+        stuff: {
+            "升级": {
+                content: [
+                    ["blank", "15px"],
+                    ["upgrades", [1,2,3,4,5,6,7,8,9]]
+                ]
+            },
+            "里程碑": {
+                content: [["blank", "15px"], "milestones"]
+            },
+        },
+    },
+    milestones: {
+        1: {
+            requirementDescription: "1 轮回点",
+            effectDescription() { return "在重生点层解锁重生点子界面" },
+            done() { return player.R.points.gte(1) }
+        },
+        2: {
+            requirementDescription: "3 轮回点",
+            effectDescription() { return "轮回点效果基础+0.01" },
+            done() { return player.R.points.gte(3) }
+        },
+    },
+    upgrades: {
+        rows: 9, cols: 5,
+        11: {
+            title: "重生",
+            description: "重生点和轮回点加成重生经验获取",
+            cost: new EN(2),
+            effect() {
+                let exp=new EN(2).times(player.R.points.add(1))
+                let expcap = new EN("100"); 
+                exp=effectWithSoftcap(exp, expcap, new EN(0.25).div(exp.nlg().nlg().add(1)))
+        let raw = player.p.points.nlg().nlog(2).pow(exp);               
+        let cap = new EN("1e9");        
+        return effectWithSoftcap(raw, cap, new EN(0.125).div(raw.nlg().nlg().add(1)));
+    },    
+    effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
+    
+        },
+        12: {
+            title: "重来",
+            description: "重生经验加成点数获取(效果不低于3.34e38)",
+            cost: new EN(2),
+            effect() {
+        let raw = player.p.rexp.add(1).pow(0.444).times(3.34e38);              
+        let cap = new EN("1.79e308");        
+        return effectWithSoftcap(raw, cap, new EN(0.222).div(raw.nlg().nlg().add(1)));
+    },    
+    effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
+    
+        },
+    },
 })
 addLayer("stat", {
     name: "统计",

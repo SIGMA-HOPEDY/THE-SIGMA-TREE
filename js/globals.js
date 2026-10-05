@@ -16,21 +16,17 @@ function keepMilestones(layer, ids) {
         }
     }
 }
-// ========== 通用软上限函数 ==========
 function applySoftcap(gain, threshold, baseExponent, hintKey) {
-    let exponentBase = new EN(baseExponent);
     if (gain.lte(threshold)) {
         if (tmp && tmp.other && hintKey) tmp.other[hintKey] = "";
         return gain;
     }
-    let excess = gain.minus(threshold);
-    let ratio = gain.div(threshold).max(1.0000000001);
+    let ratio = gain.div(threshold).max(1);
     let logGain = ratio.log10();
     let loglogGain = logGain.add(1).log10();
-    let exponent = exponentBase.div(new EN(9).plus(loglogGain));
+    let exponent = new EN(baseExponent).div(new EN(9).plus(loglogGain));
     if (!exponent.isFinite() || exponent.isNaN() || exponent.lte(0)) exponent = new EN(0.91);
-    let cappedExcess = excess.pow(exponent);
-    let result = threshold.plus(cappedExcess);
+    let result = threshold.times(ratio.pow(exponent));
 
     if (tmp && tmp.other && hintKey) {
         const names = {
@@ -43,6 +39,7 @@ function applySoftcap(gain, threshold, baseExponent, hintKey) {
     }
     return result;
 }
+// ========== 通用软上限函数 ==========
 function effectWithSoftcap(raw, cap, softPower, customCappedPower) {    
 if (raw.lte(cap)) return raw;    
 let ratio = raw.div(cap);    

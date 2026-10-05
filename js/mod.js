@@ -34,7 +34,6 @@ function getStartPoints(){
 function canGenPoints(){
 	return true
 }
-
 // Calculate points/sec!
 function getPointGen() {
     if (!canGenPoints()) return new EN(0);
@@ -46,21 +45,22 @@ function getPointGen() {
     if (hasUpgrade('p', 12)) gain = gain.times(upgradeEffect('p', 12));
     if (hasUpgrade('p', 14)) gain = gain.times(upgradeEffect('p', 14));
     if (hasUpgrade('e', 25)) gain = gain.times(upgradeEffect('e', 25));
+    if (hasUpgrade('R', 12)) gain = gain.times(upgradeEffect('R', 12));
     if (player.I.unlocked) gain = gain.times(tmp.I.effect);
    if (player.a.unlocked) gain = gain.times(tmp.a.effect);
    if (hasUpgrade('p', 23)) gain = gain.pow(upgradeEffect('p', 23));
    if (hasUpgrade('p', 24)) gain = gain.pow(upgradeEffect('p', 24));
     // ---- 一重软上限----
     let p1 = new EN("1.79e308");
-    gain = applySoftcap(gain, p1, 8.2, 'softcapHint');
+    gain = applySoftcap(gain, p1, 0.5, 'softcapHint');
 
     // ---- 二重软上限----
     let p2 = new EN("1e1000");
-    gain = applySoftcap(gain, p2, 8, 'doubleSoftcapHint');
+    gain = applySoftcap(gain, p2, 0.025, 'doubleSoftcapHint');
 
     // ---- 三重软上限 ----
     let p3 = new EN("1e114514");
-    gain = applySoftcap(gain, p3, 6.9, 'tripleSoftcapHint');
+    gain = applySoftcap(gain, p3, 0.00125, 'tripleSoftcapHint');
 
     // ---- 溢出软上限：超过 10^^4 (即 ee1e10) ----
     const overflowThreshold = EN.tetrate('10', '4');
@@ -118,7 +118,7 @@ function getUndulatingColor(period = Math.sqrt(760)){
 var displayThings = [
 	function(){
 		let x = getUndulatingColor()
-		let a = "当前残局: "+colorText("h2", x,format("3.131e310"))/*"Taeyeon"*/+" Points."
+		let a = "当前残局: "+colorText("h2", x,format("3.131e315"))/*"Taeyeon"*/+" Points."
 		let d = isEndgame()?makeRed("<br>你超过了残局,<br>游戏可能在这里不平衡"):""
 		return a+d
 	},
@@ -126,7 +126,7 @@ var displayThings = [
 
 // Determines when the game "ends"
 function isEndgame() {
-return player.points.gte("3.131e310")}
+return player.points.gte("3.131e315")}
 
 
 // Less important things beyond this point!

@@ -111,7 +111,7 @@ addLayer("a", {
             done() {
                 return player.BestPointsPerSec.gte('1.79e308')
             },
-            tooltip: "达到第一重软上限<br>奖励:25 成就点,成就点效果对增量获取生效",
+            tooltip: "达到第一重软上限<br>奖励:25 成就点,成就点效果对增量获取生效,解锁新层",
             onComplete() {
                 return player.a.points = player.a.points.add(25)
             },
