@@ -1,7 +1,6 @@
 function coloredText(text, color, fontSize = "1.4em", glow = 10) {
     return `<span style="color:${color}; font-size:${fontSize}; text-shadow:0px 0px ${glow}px ${color};">${text}</span>`;
 }
-// 放在 globals.js 或 mod.js 顶部
 function keepUpgrades(layer, ids) {
     for (let id of ids) {
         if (!player[layer].upgrades.includes(id.toString())) {
@@ -39,7 +38,6 @@ function applySoftcap(gain, threshold, baseExponent, hintKey) {
     }
     return result;
 }
-// ========== 通用软上限函数 ==========
 function effectWithSoftcap(raw, cap, softPower, customCappedPower) {    
 if (raw.lte(cap)) return raw;    
 let ratio = raw.div(cap);    
@@ -49,7 +47,6 @@ capped = customCappedPower(capped, ratio);
     }    
 return cap.times(capped);
 }
-// ========== 溢出软上限（基于slog压缩）==========
 function overflowSoftcap(value, threshold) {
     value = new EN(value);
     threshold = new EN(threshold);

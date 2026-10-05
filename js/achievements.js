@@ -116,6 +116,26 @@ addLayer("a", {
                 return player.a.points = player.a.points.add(25)
             },
         },
+        25: {
+            name: "人生...",
+            done() {
+                return hasUpgrade('R', 13)
+            },
+            tooltip: "解锁人生<br>奖励:14 成就点,永久保留增量器里程碑,解锁新的重生点升级",
+            onComplete() {
+                return player.a.points = player.a.points.add(14)
+            },
+        },
+        26: {
+            name: "原来如此",
+            done() {
+                return hasUpgrade('p', 35)
+            },
+            tooltip: "购买升级 原来如此<br>奖励:36 成就点,成就点效果对重生经验获取生效,增量效果*(增量器数+1)",
+            onComplete() {
+                return player.a.points = player.a.points.add(36)
+            },
+        },
     },
 effect() {
     let base=new EN(1.01)

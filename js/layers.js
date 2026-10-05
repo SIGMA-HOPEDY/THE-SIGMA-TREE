@@ -19,7 +19,7 @@ addLayer("p", {
     baseAmount() {return player.points},
     type() { return "normal" },    
     exponent() { return new EN(0.5) },      
-    gainMult() { // 只保留 p 层级自己的加成
+    gainMult() { 
         let mult = new EN(1)
         if (hasUpgrade('p', 13)) mult = mult.times(upgradeEffect('p', 13))
             if (hasUpgrade('p', 15)) mult = mult.times(upgradeEffect('p', 15))
@@ -37,16 +37,30 @@ if (player.e.unlocked && tmp.e && tmp.e.effect) {
         return mult
     },
     update(diff) {
-    if (!player.p.points.gte("1.79e308")) {
-        if (!tmp.p) tmp.p = {};
+    if (!tmp.p) tmp.p = {};
+    if (!player.p.points.gte("1.79e308") && player.R.activeChallenge !== 11) {
         tmp.p.rexpGain = new EN(0);
         return;
     }
-    let gain = player.p.points.add(1).log10()
-        .div(new EN("1.79e308").log10());
-         if (hasUpgrade("R", 11)) gain = gain.times(upgradeEffect("R", 11));
+    let gain = new EN(1);
+    if (player.R.activeChallenge !== 11) {
+        gain = player.p.points.add(1).log10()
+            .div(new EN("1.79e308").log10());
+        if (gain.lte(0)) gain = new EN(0);
+    }
+    let cmBest = player.R.cm1Best || new EN(0);
+    let cap = new EN("4.44e444");
+    let capped = cmBest.min(cap);
+    if (capped.gt(0)) {
+        gain = gain.times(capped.nlg().times(999.5436));
+    }
+    if (hasUpgrade("R", 11)) gain = gain.times(upgradeEffect("R", 11));
+    if (hasUpgrade("p", 32)) gain = gain.times(upgradeEffect("p", 32));
+    if (hasUpgrade("p", 34)) gain = gain.times(upgradeEffect("p", 34));
+    if (hasAchievement('a', 26)) gain = gain.times(tmp.a.effect)
+    if (player.R.activeChallenge === 11) gain = gain.pow(0.5);
+    if (hasChallenge("R", 11)) gain = gain.pow(1.25);   
     player.p.rexp = player.p.rexp.add(gain.times(diff));
-    if (!tmp.p) tmp.p = {};
     tmp.p.rexpGain = gain;
 },
     gainExp() {
@@ -148,6 +162,7 @@ rows: 5, cols: 5,
             if (hasUpgrade('I', 22)) raw = raw.times(upgradeEffect('I', 22)) 
                 if (hasUpgrade('I', 34)) raw = raw.times(upgradeEffect('I', 34)) 
                     if (hasUpgrade('e', 24)) raw = raw.times(upgradeEffect('e', 24))
+                        if (hasUpgrade('p', 35)) raw = raw.pow(upgradeEffect('p', 35)) 
             if (hasUpgrade('I', 22)) raw = raw.pow(1.5) 
             if (hasUpgrade('e', 22)) raw = raw.pow(1.5)          
             let cap0 = new EN("2");        
@@ -200,6 +215,81 @@ rows: 5, cols: 5,
         },    
         effectDisplay() { return "^" + format(upgradeEffect(this.layer, this.id),6,true)  }
     },
+    31: {
+    title: "重生感悟",
+    description: "重生经验加成增量获取",
+    cost: new EN("9e15"),
+    currencyDisplayName: "重生经验",
+    currencyInternalName: "rexp",
+    currencyLayer: "p",             
+    unlocked() { return hasAchievement("a", 25); },
+    effect() {
+    let raw = player.p.rexp.add(1).pow(0.444);
+    let cap = new EN("1.79e308");
+    return effectWithSoftcap(raw, cap, new EN(0.555).div(player.p.rexp.nlg().nlg().add(1)));
+},
+effectDisplay() { return format(upgradeEffect(this.layer, this.id), 4, true) + "x" }
+},
+32: {
+    title: "感悟颇深",
+    description: "增量加成重生经验获取",
+    cost: new EN("1e16"),
+    currencyDisplayName: "重生经验",
+    currencyInternalName: "rexp",
+    currencyLayer: "p",             
+    unlocked() { return hasUpgrade("p",31); },
+    effect() {
+    let raw = player.I.increment.nlg();
+    let cap = new EN("1.79e308");
+    return effectWithSoftcap(raw, cap, new EN(0.555).div(raw.nlg().nlg().add(1)));
+},
+effectDisplay() { return format(upgradeEffect(this.layer, this.id), 4, true) + "x" }
+},
+33: {
+    title: "有感而发",
+    description: "重生经验加成能量获取",
+    cost: new EN("5e17"),
+    currencyDisplayName: "重生经验",
+    currencyInternalName: "rexp",
+    currencyLayer: "p",             
+    unlocked() { return hasUpgrade("p",32); },
+    effect() {
+     let raw = player.p.rexp.add(1).pow(0.666);
+    let cap = new EN("1.79e308");
+    return effectWithSoftcap(raw, cap, new EN(0.555).div(player.p.rexp.nlg().nlg().add(1)));
+},
+effectDisplay() { return format(upgradeEffect(this.layer, this.id), 4, true) + "x" }
+},
+34: {
+    title: "不妨如此",
+    description: "能量加成重生经验获取",
+    cost: new EN("6.7e17"),
+    currencyDisplayName: "重生经验",
+    currencyInternalName: "rexp",
+    currencyLayer: "p",             
+    unlocked() { return hasUpgrade("p",33); },
+    effect() {
+     let raw = player.e.points.pow(0.04);
+    let cap = new EN("1.79e308");
+    return effectWithSoftcap(raw, cap, new EN(0.555).div(raw.nlg().nlg().add(1)));
+},
+effectDisplay() { return format(upgradeEffect(this.layer, this.id), 4, true) + "x" }
+},
+35: {
+    title: "原来如此",
+    description: "重生经验加成反重生效果,同时以^0.1后的效果加成增量获取",
+    cost: new EN("2.026e22"),
+    currencyDisplayName: "重生经验",
+    currencyInternalName: "rexp",
+    currencyLayer: "p",             
+    unlocked() { return hasUpgrade("p",34); },
+    effect() {
+     let raw = player.p.rexp.nlg().nlg().pow(2.88);
+    let cap = new EN("5");
+    return effectWithSoftcap(raw, cap, new EN(0.555).div(player.p.rexp.nlg().nlg().add(1)));
+},
+effectDisplay() { return  "^"+format(upgradeEffect(this.layer, this.id), 4, true)  }
+},
 },
     doReset(resettingLayer){
     if(layers[resettingLayer].row > this.row) {
@@ -254,11 +344,13 @@ addLayer("I", {
     gain = gain.times(e11).times(e12);
     if (hasUpgrade("I", 31))gain=gain.times(upgradeEffect('I',31))
         if (hasUpgrade("I", 33))gain=gain.times(upgradeEffect('I',33))
+            if (hasUpgrade("p", 31))gain=gain.times(upgradeEffect('p',31))
         if (hasUpgrade("e", 23))gain=gain.times(upgradeEffect('e',23))
             if (hasAchievement("a", 24)) gain = gain.times(tmp.a.effect);
         if (hasUpgrade("I", 31))gain=gain.pow(1.25)
+            if (hasUpgrade('p', 35)) gain = gain.pow(upgradeEffect('p', 35).pow(0.1)) 
     let cap0 = new EN('1.79e308');
-        gain = effectWithSoftcap(gain, cap0, new EN(0.1).div(gain.nlg().nlg().add(1)));
+        gain = effectWithSoftcap(gain, cap0, new EN(1).div(gain.nlg().nlg().add(1)));
     player.I.increment = player.I.increment.add(gain.times(diff));
     tmp.I.incrementGain = gain;
 },
@@ -282,11 +374,13 @@ directMult() {
     if(hasUpgrade("I", 14)) base=base.times(2);
     if(hasUpgrade("e", 12)) base=base.times(upgradeEffect('e', 12));
     base = base.times(player.I.increment.nlg().pow(2));
+    if (hasAchievement('a', 26)) base = base.times(player.I.points.add(1))
     let exp=logP.times(1.01);
     let raw=base.pow(exp);
     if(hasUpgrade("I", 12)) raw=raw.pow(1.5);
     if(hasUpgrade("I", 13)) raw=raw.pow(1.75);
     if(hasUpgrade("e", 21)) raw=raw.pow(2);
+    if (player.R.activeChallenge === 11) raw = raw.pow(0.5);
     return raw;
 },
     effectDescription(){
@@ -298,6 +392,7 @@ directMult() {
         let keep = [];
         if (layers[resettingLayer].row > this.row) layerDataReset("I", keep);
          if (hasAchievement("a", 23)) keepMilestones("I", [1])
+             if (hasAchievement("a", 25)) keepMilestones("I", [2,3])
     },
     autoPrestige() { return hasMilestone("I", 3) },
     tabFormat: [
@@ -336,6 +431,7 @@ directMult() {
         ["blank", "15px"],
         ["display-text", function() {
             let mult = player.I.increment.nlg().pow(2);
+            if (hasAchievement('a', 26)) mult = mult.times(player.I.points.add(1))
             let c = tmp.I.color;
             return `使增量器效果基础 ${coloredText("*" + format(mult, 4, true), c)}`;
         }],
@@ -596,6 +692,7 @@ addLayer("e", {
                 if (hasUpgrade('I', 21)) mult = mult.times(upgradeEffect('I', 21))
                     if (hasUpgrade('I', 32)) mult = mult.times(upgradeEffect('I', 32))
                if (hasAchievement('a', 22)) mult = mult.times(tmp.a.effect)      
+                if (hasUpgrade("p", 33)) mult = mult.times(upgradeEffect("p", 33));
         return mult
     },
     gainExp() {
@@ -622,6 +719,7 @@ layerShown() { return hasUpgrade("I", 15) || player.e.unlocked },
     if(hasUpgrade("e", 14)) raw=raw.times(upgradeEffect("e", 14));
     if(hasUpgrade('I',35))raw=raw.times(upgradeEffect("I", 35)) 
     if(hasUpgrade("I", 21)) raw=raw.pow(1.3);
+    if (player.R.activeChallenge === 11) raw = raw.pow(0.5);
     return raw;
 },
     effectDescription(){
@@ -750,6 +848,7 @@ addLayer("R", {
         unlocked: false,
         points: new EN(0),
         best: new EN(0),
+        cm1Best: new EN(0),
     }},
     color: "#ff3333",
     requires: new EN("1.79e310"),
@@ -760,9 +859,6 @@ addLayer("R", {
     branches: ["I", "e"],
     exponent() { return new EN(3.33) },
     layerShown() { return player.points.gte("1.79e310") || player.R.unlocked },
-    update(diff) {
-        player.R.best = player.R.best.max(player.R.points);
-    },
     effect() {
         let x = player.R.best;
         let iBase = new EN(1.01);
@@ -779,7 +875,12 @@ addLayer("R", {
     return `使增量获取基础 ${coloredText("*" + format(eff.incrementBase, 4, true), c)} ` +
            `能量效果基础 ${coloredText("*" + format(eff.energyBase, 4, true), c)}(基于最高)`;
 },
-
+update(diff) {
+    player.R.best = player.R.best.max(player.R.points);
+    if (player.R.activeChallenge === 11) {
+        player.R.cm1Best = player.R.cm1Best.max(player.points);
+    }
+},
     doReset(resettingLayer) {
         let keep = [];
         if (layers[resettingLayer].row > this.row) layerDataReset("R", keep);
@@ -798,18 +899,26 @@ addLayer("R", {
     ["blank", "25px"],
 ],
     microtabs: {
-        stuff: {
-            "升级": {
-                content: [
-                    ["blank", "15px"],
-                    ["upgrades", [1,2,3,4,5,6,7,8,9]]
-                ]
-            },
-            "里程碑": {
-                content: [["blank", "15px"], "milestones"]
-            },
+    stuff: {
+        "升级": {
+            content: [
+                ["blank", "15px"],
+                ["upgrades", [1,2,3,4,5,6,7,8,9]]
+            ]
+        },
+        "人生": {
+            unlocked() { return hasUpgrade("R", 13); },
+            content: [
+                ["blank", "15px"],
+                ["raw-html", () => `<h4 style="opacity:.5">进入人生会重置较低层级的进度，完成挑战获得永久奖励。</h4>`],
+                "challenges",
+            ],
+        },
+        "里程碑": {
+            content: [["blank", "15px"], "milestones"]
         },
     },
+},
     milestones: {
         1: {
             requirementDescription: "1 轮回点",
@@ -851,7 +960,36 @@ addLayer("R", {
     effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
     
         },
+        13: {
+    title: "人生",
+    description: "解锁人生",
+    cost: new EN(3),
+    unlocked() { return hasUpgrade("R", 12); },
+},
     },
+    challenges: {
+    11: {
+        name: "路阻且长",
+        challengeDescription: "点数和重生经验获取^0.5,增量器和能量效果^0.5,但重生经验一开始就能获取(+1/s)",
+        goal: new EN("4.44e444"),
+        goalDescription: "达到 4.44e444 点数",
+       rewardDescription() {
+    let c = tmp.R.color;
+    let cmBest = player.R.cm1Best || new EN(0);
+    let cap = new EN("4.44e444");
+    let capped = cmBest.min(cap);
+    let eff = capped.nlg().times(999.5436);
+    let bestText = cmBest.gte(cap)
+        ? `挑战内最高点数为 ${coloredText("4.44e444(硬上限)", c)}`
+        : `挑战内最高点数为 ${coloredText(format(cmBest, 4, true), c)}`;
+    return `挑战内最高点数大幅提高重生经验获取,完成后使重生经验获取^1.25<br>` +
+           `${bestText}</br>使重生经验获取 ${coloredText("*" + format(eff, 4, true), c)}`;
+},
+        onComplete() {}, 
+        unlocked() { return hasUpgrade("R", 13)|| player.R.activeChallenge == 11 || hasChallenge('R', 11); },
+        style: { "color": "#ff3333", "border": "2px solid #ff3333" },
+    },
+},
 })
 addLayer("stat", {
     name: "统计",
