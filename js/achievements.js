@@ -136,6 +136,16 @@ addLayer("a", {
                 return player.a.points = player.a.points.add(36)
             },
         },
+        31: {
+            name: "漫长...",
+            done() {
+                return player.R.cm1Best.gte('1e155')
+            },
+            tooltip: "在路阻且长中达1e155点数<br>奖励:50 成就点,路阻且长效果1*999999.9967138",
+            onComplete() {
+                return player.a.points = player.a.points.add(50)
+            },
+        },
     },
 effect() {
     let base=new EN(1.01)

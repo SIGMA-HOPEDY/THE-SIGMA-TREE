@@ -34,7 +34,7 @@ function applySoftcap(gain, threshold, baseExponent, hintKey) {
             'tripleSoftcapHint': '三重软上限',
         };
         let name = names[hintKey] || hintKey;
-        tmp.other[hintKey] = `${name}:点数获取>${format(threshold, 3, true)}后^${format(exponent, 9, true)}`;
+        tmp.other[hintKey] = `${name}:点数获取>${format(threshold, 3, true)}后超出部分^${format(exponent, 9, true)}`;
     }
     return result;
 }

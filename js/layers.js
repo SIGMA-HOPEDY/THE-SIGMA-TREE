@@ -60,6 +60,7 @@ if (player.e.unlocked && tmp.e && tmp.e.effect) {
     if (hasAchievement('a', 26)) gain = gain.times(tmp.a.effect)
     if (player.R.activeChallenge === 11) gain = gain.pow(0.5);
     if (hasChallenge("R", 11)) gain = gain.pow(1.25);   
+    if (hasUpgrade("R", 15)) gain = gain.pow(upgradeEffect("R", 15));
     player.p.rexp = player.p.rexp.add(gain.times(diff));
     tmp.p.rexpGain = gain;
 },
@@ -164,7 +165,8 @@ rows: 5, cols: 5,
                     if (hasUpgrade('e', 24)) raw = raw.times(upgradeEffect('e', 24))
                         if (hasUpgrade('p', 35)) raw = raw.pow(upgradeEffect('p', 35)) 
             if (hasUpgrade('I', 22)) raw = raw.pow(1.5) 
-            if (hasUpgrade('e', 22)) raw = raw.pow(1.5)          
+            if (hasUpgrade('e', 22)) raw = raw.pow(1.5)    
+                if (hasUpgrade('R', 14)) raw = raw.pow(upgradeEffect('R', 14))       
             let cap0 = new EN("2");        
             if (hasUpgrade('p', 25)) cap0 = cap0.times(1.1)
                  if (hasUpgrade('I', 15)) cap0 = cap0.times(1.3)
@@ -175,6 +177,10 @@ rows: 5, cols: 5,
                          raw = effectWithSoftcap(raw, cap1, new EN(0.001).div(player[this.layer].points.nlg().nlg().add(1)))
                          let cap2 = new EN("1e9");
                          if (raw.gte(cap2)) raw = raw.div(cap2).log10().add(1).times(cap2);
+                         let cap3 = new EN("3.34e38");
+                         if (raw.gte(cap3)) raw = raw.div(cap3).log10().add(1).pow(0.5).times(cap3);
+                          let cap4 = new EN("1.79e308");
+                         if (raw.gte(cap4)) raw = raw.div(cap4).log10().add(1).pow(0.025).times(cap4);
             return raw;
         },  
         effectDisplay() { return format(upgradeEffect(this.layer, this.id),6,true) + "x" }
@@ -638,7 +644,7 @@ return cost;
     let cap1 = new EN(22222);
     if (raw.gte(cap1)) raw = raw.div(cap1).log10().add(1).times(cap1);
     let cap2 = new EN(1919810);
-    if (raw.gte(cap2)) raw = raw.div(cap2).log10().add(1).times(cap2);
+    if (raw.gte(cap2)) raw = raw.div(cap2).log10().add(1).pow(0.5).times(cap2);
     return raw;
 },
        display() {
@@ -943,7 +949,8 @@ update(diff) {
                 exp=effectWithSoftcap(exp, expcap, new EN(0.25).div(exp.nlg().nlg().add(1)))
         let raw = player.p.points.nlg().nlog(2).pow(exp);               
         let cap = new EN("1e9");        
-        return effectWithSoftcap(raw, cap, new EN(0.125).div(raw.nlg().nlg().add(1)));
+        if (hasUpgrade("R", 15)) cap = cap.pow(upgradeEffect("R", 15));
+        return effectWithSoftcap(raw, cap, new EN(0.25).div(raw.nlg().nlg().add(1)));
     },    
     effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
     
@@ -966,6 +973,30 @@ update(diff) {
     cost: new EN(3),
     unlocked() { return hasUpgrade("R", 12); },
 },
+14: {
+    title: "反轮回",
+    description: "轮回点大幅加成反重生效果",
+    cost: new EN(4),
+    unlocked() { return hasUpgrade("R", 13); },
+    effect() {
+        let raw = player.R.points.nlg().pow(20);              
+        let cap = new EN("20");        
+        return effectWithSoftcap(raw, cap, new EN(0.0188).div(raw.nlg().add(1)));
+    },    
+    effectDisplay() { return "^"+format(upgradeEffect(this.layer, this.id),4,true)  }
+},
+15: {
+    title: "再来一次",
+    description: "轮回点大幅加成重生经验获取,并延迟重生效果软上限",
+    cost: new EN(4),
+    unlocked() { return hasUpgrade("R", 14); },
+    effect() {
+        let raw = player.R.points.nlg().pow(2);              
+        let cap = new EN("2");        
+        return effectWithSoftcap(raw, cap, new EN(0.01).div(raw.nlg().add(1)));
+    },    
+    effectDisplay() { return "^"+format(upgradeEffect(this.layer, this.id),4,true)  }
+},
     },
     challenges: {
     11: {
@@ -979,6 +1010,7 @@ update(diff) {
     let cap = new EN("4.44e444");
     let capped = cmBest.min(cap);
     let eff = capped.nlg().times(999.5436);
+    if(hasAchievement('a',31))eff=eff.times(999999.9967138)
     let bestText = cmBest.gte(cap)
         ? `挑战内最高点数为 ${coloredText("4.44e444(硬上限)", c)}`
         : `挑战内最高点数为 ${coloredText(format(cmBest, 4, true), c)}`;

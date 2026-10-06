@@ -113,13 +113,13 @@ function getUndulatingColor(period = Math.sqrt(760)){
 var displayThings = [
 	function(){
 		let x = getUndulatingColor()
-		let a = "当前残局: "+colorText("h2", x,format("4"))+" 轮回点"
+		let a = "当前残局: "+colorText("h2", x,format("1e2156"))+" 重生点"
 		let d = isEndgame()?makeRed("<br>你超过了残局,<br>游戏可能在这里不平衡"):""
 		return a+d
 	},
 ]
 function isEndgame() {
-return player.R.points.gte("4")}
+return player.p.points.gte("1e2156")}
 
 var backgroundStyle = {
 
