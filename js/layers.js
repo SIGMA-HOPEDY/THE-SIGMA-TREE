@@ -246,6 +246,7 @@ effectDisplay() { return format(upgradeEffect(this.layer, this.id), 4, true) + "
     unlocked() { return hasUpgrade("p",31); },
     effect() {
     let raw = player.I.increment.nlg();
+    if (hasUpgrade("R", 15)) raw = raw.pow(upgradeEffect("R", 15).pow(2));
     let cap = new EN("1.79e308");
     return effectWithSoftcap(raw, cap, new EN(0.555).div(raw.nlg().nlg().add(1)));
 },
@@ -782,6 +783,7 @@ rows: 9, cols: 5,
     unlocked() { return hasUpgrade('e', 11) },    
     effect() {        
         let raw = player[this.layer].points.nlg().pow(0.78);
+        if (hasUpgrade("R", 15)) raw = raw.pow(upgradeEffect("R", 15).pow(2));
           if (hasUpgrade('e', 15)) raw = raw.pow(2);                
         let cap = new EN("1e9");        
         return effectWithSoftcap(raw, cap, new EN(0.25).div(player[this.layer].points.nlg().nlg().add(1)));
@@ -987,7 +989,7 @@ update(diff) {
 },
 15: {
     title: "再来一次",
-    description: "轮回点大幅加成重生经验获取,并延迟重生效果软上限",
+    description: "轮回点大幅加成重生经验获取,并延迟重生效果软上限,效果^2加成感悟颇深和能量增量效果",
     cost: new EN(4),
     unlocked() { return hasUpgrade("R", 14); },
     effect() {
