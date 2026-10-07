@@ -53,6 +53,7 @@ if (player.e.unlocked && tmp.e && tmp.e.effect) {
     let capped = cmBest.min(cap);
     if (capped.gt(0)) {
         gain = gain.times(capped.nlg().times(999.5436));
+        if (hasAchievement('a', 32)) gain = gain.times(999999.9967138)
     }
     if (hasUpgrade("R", 11)) gain = gain.times(upgradeEffect("R", 11));
     if (hasUpgrade("p", 32)) gain = gain.times(upgradeEffect("p", 32));
@@ -246,7 +247,7 @@ effectDisplay() { return format(upgradeEffect(this.layer, this.id), 4, true) + "
     unlocked() { return hasUpgrade("p",31); },
     effect() {
     let raw = player.I.increment.nlg();
-    if (hasUpgrade("R", 15)) raw = raw.pow(upgradeEffect("R", 15).pow(2));
+    if (hasUpgrade("R", 15)&&hasAchievement('a',31)) raw = raw.pow(upgradeEffect("R", 15).pow(2));
     let cap = new EN("1.79e308");
     return effectWithSoftcap(raw, cap, new EN(0.555).div(raw.nlg().nlg().add(1)));
 },
@@ -317,6 +318,7 @@ addLayer("I", {
     auto: false,
     increment: new EN(0),
     best: new EN(0), 
+    autoTime: 0,
 }},
     color: "#3b18ff",
     requires: new EN(1e5),
@@ -354,12 +356,31 @@ addLayer("I", {
             if (hasUpgrade("p", 31))gain=gain.times(upgradeEffect('p',31))
         if (hasUpgrade("e", 23))gain=gain.times(upgradeEffect('e',23))
             if (hasAchievement("a", 24)) gain = gain.times(tmp.a.effect);
+    if (hasAchievement('a', 32)){let cmBest = player.R.cm1Best || new EN(0);
+    let cap = new EN("4.44e444");
+    let capped = cmBest.min(cap);
+    if (capped.gt(0)) {
+        gain = gain.times(capped.nlg().times(999.5436)).times(999999.9967138)
+    }}
         if (hasUpgrade("I", 31))gain=gain.pow(1.25)
             if (hasUpgrade('p', 35)) gain = gain.pow(upgradeEffect('p', 35).pow(0.1)) 
+                if (hasUpgrade("R", 15)&&hasAchievement('a',31)) gain = gain.pow(upgradeEffect("R", 15).pow(0.5));
     let cap0 = new EN('1.79e308');
+    if(hasMilestone("R",3))cap0=new EN('1e1000')
         gain = effectWithSoftcap(gain, cap0, new EN(1).div(gain.nlg().nlg().add(1)));
     player.I.increment = player.I.increment.add(gain.times(diff));
     tmp.I.incrementGain = gain;
+    if (hasMilestone("R", 5)) {
+    player.I.autoTime = (player.I.autoTime || 0) + diff;
+    if (player.I.autoTime >= 0.05) {
+        let times = Math.floor(player.I.autoTime / 0.05);
+        player.I.autoTime -= times * 0.05;
+        let maxCount = new EN(times * 10);
+        layers.I.buyables[11].buyMax(maxCount);
+        layers.I.buyables[12].buyMax(maxCount);
+        layers.I.buyables[13].buyMax(maxCount);
+    }
+}
 },
 directMult() {
     let mult = new EN(1)
@@ -476,8 +497,9 @@ rows: 9, cols: 5,
     15: { title: "增量增量", description: "反重生效果软上限延迟1.3倍,解锁一个新层级", cost: new EN(24), unlocked() { return hasUpgrade('I', 14) }  },
     21: { title: "增量^2", description: "能量效果^1.3,91增量器后使增量器提升能量获取", cost: new EN(101), unlocked() { return hasUpgrade('I', 15) && hasUpgrade('e', 22) } ,
         effect() {        if(player.I.points.lt(91)) return new EN(1);
-        let raw = player.I.points.pow(2);               
-        let cap = new EN("1e9");        
+        let raw = player.I.points.pow(2);
+        if(hasMilestone("R", 4))raw=raw.pow(3)               
+        let cap = new EN("3.38e38");        
         return effectWithSoftcap(raw, cap, new EN(0.125).div(player.I.points.nlg().nlg().add(1)));
     },    
     effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
@@ -485,8 +507,9 @@ rows: 9, cols: 5,
     22: { title: "增量^3", description: "反重生效果^1.5,反重生效果软上限延迟^1.25,增量器提升反重生效果", cost: new EN(105), unlocked() { return hasUpgrade('I', 21) } ,
         effect() {     
         let raw = player.I.points.add(1).pow(0.521);    
-        if(hasUpgrade('I',34))raw=raw.pow(3)           
-        let cap = new EN("1e9");        
+        if(hasUpgrade('I',34))raw=raw.pow(3)  
+        if(hasMilestone("R", 4))raw=raw.pow(3)           
+        let cap = new EN("3.38e38");        
         return effectWithSoftcap(raw, cap, new EN(0.125).div(player.I.points.nlg().nlg().add(1)));
     },    
     effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
@@ -498,7 +521,8 @@ rows: 9, cols: 5,
             25: { title: "增量加成", description: "增量器降低增量购买项价格,并将增量获取基础*1.05,增量速度效果基础+0.05,增量强度效果基础+0.5", cost: new EN(205), unlocked() { return hasUpgrade('I', 24) } ,
             effect() {     
         let raw = player.I.points.add(1).pow(player.I.points.nlg().pow(0.5));      
-        if(hasUpgrade('I',35))raw=raw.pow(3)          
+        if(hasUpgrade('I',35))raw=raw.pow(3) 
+           if(hasMilestone("R", 4))raw=raw.pow(4)           
         let cap = new EN("1.79e308");        
         return effectWithSoftcap(raw, cap, new EN(0.25).div(player.I.points.nlg().nlg().add(1)));
     },    
@@ -507,7 +531,8 @@ rows: 9, cols: 5,
            31: { title: "增量变胀", description: "增量器加成增量获取,并将增量获取^1.25", cost: new EN(217), unlocked() { return hasUpgrade('I', 25) } ,
             effect() {     
         let raw = player.I.points.add(1).pow(player.I.points.nlg().pow(0.91));  
-        if(hasUpgrade('I',35))raw=raw.pow(3)              
+        if(hasUpgrade('I',35))raw=raw.pow(3)  
+        if(hasMilestone("R", 4))raw=raw.pow(5)              
         let cap = new EN("1.79e308");        
         return effectWithSoftcap(raw, cap, new EN(0.78).div(player.I.points.nlg().nlg().add(1)));
     },    
@@ -532,7 +557,7 @@ rows: 9, cols: 5,
             34: { title: "胀!", description: "增量提升反重生效果,并将增量^3效果^3", cost: new EN(250), unlocked() { return hasUpgrade('I', 33) } ,
             effect() {     
         let raw = player.I.increment.nlg().pow(3);               
-        let cap = new EN("1e9");        
+        let cap = new EN("1e9");  
         return effectWithSoftcap(raw, cap, new EN(0.03).div(player.I.increment.nlg().nlg().nlg().add(1)));
     },    
     effectDisplay() { return "*"+format(upgradeEffect(this.layer, this.id),6,true)  }
@@ -554,6 +579,7 @@ buyables: {
         cost(x) {let costbase = new EN(10).pow(x.nlg()).times(new EN(1.01).pow(x.pow(2))).times(new EN(0.99).pow(x));        
 let costexp = new EN(1);
 let cost = EN.pow(costbase, costexp); 
+if(x.gte(500))cost=cost.pow(x.div(500).pow(1.1)) 
  if (hasUpgrade("I", 25)) cost = cost.div(upgradeEffect("I", 25));                       
 return cost;
         },
@@ -562,6 +588,9 @@ return cost;
             if (hasUpgrade("I", 25))base=base.add(0.05)
             let exp=x
             let raw=base.pow(exp)
+            if(x.gte(500))raw=raw.times(x.div(500).pow(x.nlg().pow(3)))
+                let cap0 = new EN(1.79e308);
+    if (raw.gte(cap0)) raw = raw.div(cap0).pow(0.5).times(cap0);
             return raw;
         },
         display() {
@@ -576,16 +605,29 @@ return cost;
         canAfford() {
             return player.I.increment.gte(tmp.I.buyables[11].cost);
         },
-        buy() {
-            player.I.increment = player.I.increment.sub(tmp.I.buyables[11].cost);
-            player.I.buyables[11] = getBuyableAmount("I", 11).add(1);
-        },
-        buyMax() {
-            while (player.I.increment.gte(this.cost(player.I.buyables[11]))) {
-                player.I.increment = player.I.increment.sub(this.cost(player.I.buyables[11]));
-                player.I.buyables[11] = player.I.buyables[11].add(1);
+         buy() {
+        if (!this.canAfford()) return;
+        let cost = this.cost(getBuyableAmount("I", 11));
+        player.I.buyables[11] = getBuyableAmount("I", 11).add(1);
+        if (!hasMilestone("R", 5)) {
+            player.I.increment = player.I.increment.sub(cost);
+        }
+    },
+    buyMax(maximum) {
+        let count = 0;
+        let limit = maximum !== undefined ? maximum.toNumber() : 1000;
+        while (count < limit) {
+            let x = getBuyableAmount("I", 11);
+            let cost = this.cost(x);
+            if (!cost.isFinite()) break;
+            if (player.I.increment.lt(cost)) break;
+            player.I.buyables[11] = x.add(1);
+            if (!hasMilestone("R", 5)) {
+                player.I.increment = player.I.increment.sub(cost);
             }
-        },
+            count++;
+        }
+    },
         unlocked() { return hasUpgrade("I", 24); },
     },
 
@@ -594,13 +636,17 @@ return cost;
         cost(x) {let costbase = new EN(10000).pow(x.nlg()).times(new EN(1.25).pow(x.pow(2))).times(new EN(0.91).pow(x));        
 let costexp = new EN(1);
 let cost = EN.pow(costbase, costexp); 
- if (hasUpgrade("I", 25)) cost = cost.div(upgradeEffect("I", 25));                       
+if(x.gte(100))cost=cost.pow(x.div(100).pow(1.2)) 
+ if (hasUpgrade("I", 25)) cost = cost.div(upgradeEffect("I", 25));                
 return cost;
         },
         effect(x) {let base=new EN(2)
             if (hasUpgrade("I", 25))base=base.add(0.5)
             let exp=x
             let raw=base.pow(exp)
+            if(x.gte(100))raw=raw.times(x.div(100).pow(x.nlg().pow(2))) 
+                let cap0 = new EN(1.79e308);
+    if (raw.gte(cap0)) raw = raw.div(cap0).pow(0.5).times(cap0);
             return raw;
         },
         display() {
@@ -616,15 +662,28 @@ return cost;
             return player.I.increment.gte(tmp.I.buyables[12].cost);
         },
         buy() {
-            player.I.increment = player.I.increment.sub(tmp.I.buyables[12].cost);
-            player.I.buyables[12] = getBuyableAmount("I", 12).add(1);
-        },
-        buyMax() {
-            while (player.I.increment.gte(this.cost(player.I.buyables[12]))) {
-                player.I.increment = player.I.increment.sub(this.cost(player.I.buyables[12]));
-                player.I.buyables[12] = player.I.buyables[12].add(1);
+        if (!this.canAfford()) return;
+        let cost = this.cost(getBuyableAmount("I", 12));
+        player.I.buyables[12] = getBuyableAmount("I", 12).add(1);
+        if (!hasMilestone("R", 5)) {
+            player.I.increment = player.I.increment.sub(cost);
+        }
+    },
+    buyMax(maximum) {
+        let count = 0;
+        let limit = maximum !== undefined ? maximum.toNumber() : 1000;
+        while (count < limit) {
+            let x = getBuyableAmount("I", 12);
+            let cost = this.cost(x);
+            if (!cost.isFinite()) break;
+            if (player.I.increment.lt(cost)) break;
+            player.I.buyables[12] = x.add(1);
+            if (!hasMilestone("R", 5)) {
+                player.I.increment = player.I.increment.sub(cost);
             }
-        },
+            count++;
+        }
+    },
         unlocked() { return hasUpgrade("I", 24) && getBuyableAmount("I", 11).gte(5); },
     },
 
@@ -634,12 +693,14 @@ return cost;
 let costbase = new EN(100000).times(new EN(1.5).pow(x.pow(2))).times(new EN(0.78).pow(x));        
 let costexp = new EN(1);
 let cost = EN.pow(costbase, costexp); 
+if(x.gte(100))cost=cost.pow(x.div(100).pow(2)) 
  if (hasUpgrade("I", 25)) cost = cost.div(upgradeEffect("I", 25));                       
 return cost;
         },
        effect(x) {
         let base = new EN(1.5);
     let raw = base.pow(x);
+    if(x.gte(100))raw=raw.times(x.div(100).pow(x.nlg()))
     let cap0 = new EN(100);
     if (raw.gte(cap0)) raw = raw.div(cap0).pow(0.13).times(cap0);
     let cap1 = new EN(22222);
@@ -661,16 +722,28 @@ canAfford() {
     return player.I.increment.gte(this.cost(getBuyableAmount("I", 13)));
 },
 buy() {
-    let cost = this.cost(getBuyableAmount("I", 13));
-    player.I.increment = player.I.increment.sub(cost);
-    player.I.buyables[13] = getBuyableAmount("I", 13).add(1);
-},
-        buyMax() {
-            while (player.I.increment.gte(this.cost(player.I.buyables[13]))) {
-                player.I.increment = player.I.increment.sub(this.cost(player.I.buyables[13]));
-                player.I.buyables[13] = player.I.buyables[13].add(1);
+        if (!this.canAfford()) return;
+        let cost = this.cost(getBuyableAmount("I", 13));
+        player.I.buyables[13] = getBuyableAmount("I", 13).add(1);
+        if (!hasMilestone("R", 5)) {
+            player.I.increment = player.I.increment.sub(cost);
+        }
+    },
+    buyMax(maximum) {
+        let count = 0;
+        let limit = maximum !== undefined ? maximum.toNumber() : 1000;
+        while (count < limit) {
+            let x = getBuyableAmount("I", 13);
+            let cost = this.cost(x);
+            if (!cost.isFinite()) break;
+            if (player.I.increment.lt(cost)) break;
+            player.I.buyables[13] = x.add(1);
+            if (!hasMilestone("R", 5)) {
+                player.I.increment = player.I.increment.sub(cost);
             }
-        },
+            count++;
+        }
+    },
         unlocked() { return hasUpgrade("I", 24) && getBuyableAmount("I", 12).gte(3); },
     },
 },
@@ -700,6 +773,12 @@ addLayer("e", {
                     if (hasUpgrade('I', 32)) mult = mult.times(upgradeEffect('I', 32))
                if (hasAchievement('a', 22)) mult = mult.times(tmp.a.effect)      
                 if (hasUpgrade("p", 33)) mult = mult.times(upgradeEffect("p", 33));
+        if (hasAchievement('a', 32)){let cmBest = player.R.cm1Best || new EN(0);
+    let cap = new EN("4.44e444");
+    let capped = cmBest.min(cap);
+    if (capped.gt(0)) {
+        mult = mult.times(capped.nlg().times(999.5436)).times(999999.9967138)
+    }}
         return mult
     },
     gainExp() {
@@ -783,7 +862,7 @@ rows: 9, cols: 5,
     unlocked() { return hasUpgrade('e', 11) },    
     effect() {        
         let raw = player[this.layer].points.nlg().pow(0.78);
-        if (hasUpgrade("R", 15)) raw = raw.pow(upgradeEffect("R", 15).pow(2));
+        if (hasUpgrade("R", 15)&&hasAchievement('a',31)) raw = raw.pow(upgradeEffect("R", 15).pow(2));
           if (hasUpgrade('e', 15)) raw = raw.pow(2);                
         let cap = new EN("1e9");        
         return effectWithSoftcap(raw, cap, new EN(0.25).div(player[this.layer].points.nlg().nlg().add(1)));
@@ -839,8 +918,10 @@ rows: 9, cols: 5,
     25: { title: "核能", description: "能量加成点数获取", cost: new EN(1e88),
     unlocked() { return hasUpgrade('e', 24) },    
     effect() {        
-        let raw = player.e.points.nlg().pow(3.33);               
-        let cap = new EN("1e9");        
+        let raw = player.e.points.nlg().pow(3.33); 
+        if(hasMilestone("R", 4))raw=raw.pow(3.33)                
+        let cap = new EN("1e9");  
+        if(hasMilestone("R", 4))cap=cap.pow(3.33)      
         return effectWithSoftcap(raw, cap, new EN(0.33).div(player.e.points.nlg().nlg().add(1)));
     },    
     effectDisplay() { return format(upgradeEffect(this.layer, this.id),4,true) + "x" }
@@ -867,6 +948,11 @@ addLayer("R", {
     branches: ["I", "e"],
     exponent() { return new EN(3.33) },
     layerShown() { return player.points.gte("1.79e310") || player.R.unlocked },
+    directMult() {
+    let mult = new EN(1)
+    if (hasMilestone('R',5)) mult = mult.times(1.2)
+    return mult
+},
     effect() {
         let x = player.R.best;
         let iBase = new EN(1.01);
@@ -938,6 +1024,21 @@ update(diff) {
             effectDescription() { return "轮回点效果基础+0.01" },
             done() { return player.R.points.gte(3) }
         },
+        3: {
+            requirementDescription: "在路阻且长中达1e182点数",
+            effectDescription() { return "延迟增量获取软上限至1e1000" },
+            done() { return player.R.cm1Best.gte('1e182') }
+        },
+        4: {
+            requirementDescription: "5 轮回点",
+            effectDescription() { return "增量^2和增量^3效果^3,核能效果和软上限阀值^3.33" },
+            done() { return player.R.points.gte(5) }
+        },
+        5: {
+            requirementDescription: "在路阻且长中达1.79e308点数",
+            effectDescription() { return "自动购买增量购买项,且不消耗增量,轮回点获取*1.2" },
+            done() { return player.R.cm1Best.gte('1.79e308') }
+        },
     },
     upgrades: {
         rows: 9, cols: 5,
@@ -989,7 +1090,7 @@ update(diff) {
 },
 15: {
     title: "再来一次",
-    description: "轮回点大幅加成重生经验获取,并延迟重生效果软上限,效果^2加成感悟颇深和能量增量效果",
+    description: "轮回点大幅加成重生经验获取,并延迟重生效果软上限",
     cost: new EN(4),
     unlocked() { return hasUpgrade("R", 14); },
     effect() {
@@ -1012,7 +1113,7 @@ update(diff) {
     let cap = new EN("4.44e444");
     let capped = cmBest.min(cap);
     let eff = capped.nlg().times(999.5436);
-    if(hasAchievement('a',31))eff=eff.times(999999.9967138)
+    if(hasAchievement('a',32))eff=eff.times(999999.9967138)
     let bestText = cmBest.gte(cap)
         ? `挑战内最高点数为 ${coloredText("4.44e444(硬上限)", c)}`
         : `挑战内最高点数为 ${coloredText(format(cmBest, 4, true), c)}`;

@@ -141,7 +141,17 @@ addLayer("a", {
             done() {
                 return player.R.cm1Best.gte('1e155')
             },
-            tooltip: "在路阻且长中达1e155点数<br>奖励:50 成就点,路阻且长效果1*999999.9967138",
+            tooltip: "在路阻且长中达1e155点数<br>奖励:50 成就点,再来一次效果^2加成感悟颇深和能量增量效果,效果^0.5加成增量获取",
+            onComplete() {
+                return player.a.points = player.a.points.add(50)
+            },
+        },
+        32: {
+            name: "愈发艰难...",
+            done() {
+                return player.R.cm1Best.gte('1.79e308')
+            },
+            tooltip: "在路阻且长中达1.79e308点数<br>奖励:50 成就点,路阻且长效果1*999999.9967138,且加成增量和能量获取",
             onComplete() {
                 return player.a.points = player.a.points.add(50)
             },
