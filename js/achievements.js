@@ -121,7 +121,7 @@ addLayer("a", {
             done() {
                 return hasUpgrade('R', 13)
             },
-            tooltip: "解锁人生<br>奖励:14 成就点,永久保留增量器里程碑,解锁新的重生点升级",
+            tooltip: "解锁人生<br>奖励:14 成就点,永久保留前三个增量器里程碑,解锁新的重生点升级",
             onComplete() {
                 return player.a.points = player.a.points.add(14)
             },
@@ -156,11 +156,72 @@ addLayer("a", {
                 return player.a.points = player.a.points.add(50)
             },
         },
+        33: {
+            name: "不幸之数",
+            done() {
+                return player.R.points.gte('13')
+            },
+            tooltip: "获得 13 轮回点<br>奖励:250 成就点,永久保留第三行重生点升级,前二行增量器和能量升级,成就点效果的slog对增量器获取生效",
+            onComplete() {
+                return player.a.points = player.a.points.add(250)
+            },
+        },
+        34: {
+            name: "17...",
+            done() {
+                return player.R.points.gte('17')
+            },
+            tooltip: "获得 17 轮回点<br>奖励:500 成就点,永久保留前七个增量器里程碑,点数获取*1e225",
+            onComplete() {
+                return player.a.points = player.a.points.add(500)
+            },
+        },
+        35: {
+            name: "光!",
+            done() {
+                return player.e.light.gte('1')
+            },
+            tooltip: "获得 1 光子<br>奖励:1500 成就点,永久保留第三行增量器升级,成就数加成光子获取",
+            onComplete() {
+                return player.a.points = player.a.points.add(1500)
+            },
+        },
+        36: {
+            name: "1000!",
+            done() {
+                return player.points.gte('1e1000')
+            },
+            tooltip: "达到1e1000点数<br>奖励:1944 成就点,100光子后解锁新层级",
+            onComplete() {
+                return player.a.points = player.a.points.add(1944)
+            },
+        },
+        41: {
+            name: "继续",
+            done() {
+                return player.R.points.gte('31')
+            },
+            tooltip: "获得 31 轮回点<br>奖励:5556 成就点",
+            onComplete() {
+                return player.a.points = player.a.points.add(5556)
+            },
+        },
+        42: {
+            name: "我去,又来?!",
+            done() {
+                return player.BestPointsPerSec.gte('1e10000')
+            },
+            tooltip: "达到第二重软上限<br>奖励:10000 成就点",
+            onComplete() {
+                return player.a.points = player.a.points.add(10000)
+            },
+        },
     },
 effect() {
     let base=new EN(1.01)
     if (hasAchievement('a', 15)) base=base.add(0.04)
     if (hasAchievement('a', 22)) base=base.add(0.05)
+        base = base.add(getLightEff3());
     let exp=player.a.points
     let raw=base.pow(exp)
     return raw;

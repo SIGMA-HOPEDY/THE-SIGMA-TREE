@@ -8,6 +8,19 @@ function keepUpgrades(layer, ids) {
         }
     }
 }
+function getRexpEffect() {
+    let rexp = player.p.rexp;
+    let raw = rexp.add(1).pow(rexp.nlg().pow(0.5));
+    let cap = new EN("1e1e4");
+    if (raw.gte(cap)) raw = effectWithSoftcap(raw, cap, new EN(0.5).div(raw.nlg().nlg().add(1)));
+    let cap1 = new EN("1e1e9");
+    if (raw.gte(cap1)) raw = EN.pow('10', raw.log10().div(cap1.log10()).log10().add(1).pow(0.5).times(cap1.log10()));
+    let cap2 = new EN("e1.79e308");
+    if (raw.gte(cap2)) raw = EN.pow('10', raw.log10().div(cap2.log10()).log10().add(1).pow(0.025).times(cap2.log10()));
+    let cap3 = new EN("10^^7");
+    if (raw.gte(cap3)) raw = EN.tetrate('10', raw.slog().div(cap3.slog()).pow(0.5).times(cap3.slog()));
+    return raw;
+}
 function keepMilestones(layer, ids) {
     for (let id of ids) {
         if (!player[layer].milestones.includes(id.toString())) {
@@ -72,4 +85,36 @@ function overflowSoftcap(value, threshold) {
         ['softcapHint','doubleSoftcapHint','tripleSoftcapHint'].forEach(k => tmp.other[k] = "");
     }
     return EN.tetrate(base, g);
+}
+function getLightEff1() {
+    let l = player.e.light || new EN(0);
+    if (l.lt(1)) return new EN(1);
+    let eff = l.times('3e5').pow(l.min(30));
+    if (player.R.activeChallenge === 12) eff = eff.pow(0.25); // 新增
+    return eff;
+}
+function getLightEff2() {
+    let l = player.e.light || new EN(0);
+    if (l.lt(7)) return new EN(1);
+    let eff = l.pow(3.5).times('3e5').times(effdq());
+    if (player.R.activeChallenge === 12) eff = eff.pow(0.25); // 新增
+    return eff;
+}
+function getLightEff3() {
+    let l = player.e.light || new EN(0);
+    if (l.lt(13)) return new EN(0);
+    let eff = l.slog().div('13');
+    if (player.R.activeChallenge === 12) eff = eff.times(7); // 新增
+    return eff;
+}// 计算 uq (上夸克) 效果
+function effuq() {
+    // 为了防止 Q 层还没初始化时调用报错，加上保护
+    if (!player.Q || !player.Q.uq) return new EN(1);
+    return player.Q.uq.add(1).pow(5);
+}
+
+// 计算 dq (下夸克) 效果
+function effdq() {
+    if (!player.Q || !player.Q.dq) return new EN(1);
+    return player.Q.dq.add(1).pow(3)
 }
